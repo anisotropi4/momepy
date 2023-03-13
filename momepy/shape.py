@@ -835,7 +835,7 @@ class Corners:
 
         # fill new column with the value of area, iterating over rows one by one
         for geom in tqdm(gdf.geometry, total=gdf.shape[0], disable=not verbose):
-            if geom.type == "Polygon":
+            if geom.geom_type == "Polygon":
                 corners = 0  # define empty variables
                 points = list(geom.exterior.coords)  # get points of a shape
                 stop = len(points) - 1  # define where to stop
@@ -863,7 +863,7 @@ class Corners:
                             corners = corners + 1
                         else:
                             continue
-            elif geom.type == "MultiPolygon":
+            elif geom.geom_type == "MultiPolygon":
                 corners = 0  # define empty variables
                 for g in geom.geoms:
                     points = list(g.exterior.coords)  # get points of a shape
@@ -951,7 +951,7 @@ class Squareness:
 
         # fill new column with the value of area, iterating over rows one by one
         for geom in tqdm(gdf.geometry, total=gdf.shape[0], disable=not verbose):
-            if geom.type == "Polygon":
+            if geom.geom_type == "Polygon":
                 angles = []
                 points = list(geom.exterior.coords)  # get points of a shape
                 stop = len(points) - 1  # define where to stop
@@ -1178,7 +1178,7 @@ class CentroidCorners:
 
         # iterating over rows one by one
         for geom in tqdm(gdf.geometry, total=gdf.shape[0], disable=not verbose):
-            if geom.type == "Polygon":
+            if geom.geom_type == "Polygon":
                 distances = []  # set empty list of distances
                 centroid = geom.centroid  # define centroid
                 points = list(geom.exterior.coords)  # get points of a shape
@@ -1271,7 +1271,7 @@ class Linearity:
 
         euclidean = gdf.geometry.apply(
             lambda geom: self._dist(geom.coords[0], geom.coords[-1])
-            if geom.type == "LineString"
+            if geom.geom_type == "LineString"
             else np.nan
         )
         self.series = euclidean / gdf.geometry.length

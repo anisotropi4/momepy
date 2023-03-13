@@ -68,7 +68,7 @@ class Orientation:
             return math.hypot(b[0] - a[0], b[1] - a[1])
 
         for geom in tqdm(gdf.geometry, total=gdf.shape[0], disable=not verbose):
-            if geom.type in ["Polygon", "MultiPolygon", "LinearRing"]:
+            if geom.geom_type in ["Polygon", "MultiPolygon", "LinearRing"]:
                 # TODO: vectorize once minimum_rotated_rectangle is in geopandas
                 bbox = list(geom.minimum_rotated_rectangle.exterior.coords)
                 axis1 = _dist(bbox[0], bbox[3])
@@ -78,7 +78,7 @@ class Orientation:
                     az = _azimuth(bbox[0], bbox[1])
                 else:
                     az = _azimuth(bbox[0], bbox[3])
-            elif geom.type in ["LineString", "MultiLineString"]:
+            elif geom.geom_type in ["LineString", "MultiLineString"]:
                 coords = geom.coords
                 az = _azimuth(coords[0], coords[-1])
             else:

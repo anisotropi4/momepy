@@ -8,7 +8,7 @@ import geopandas as gpd
 import libpysal
 import numpy as np
 import pandas as pd
-import pygeos
+import shapely
 from packaging.version import Version
 from scipy.spatial import Voronoi
 from shapely.geometry.base import BaseGeometry
@@ -243,10 +243,8 @@ class Tessellation:
         else:
             if isinstance(limit, (gpd.GeoSeries, gpd.GeoDataFrame)):
                 limit = limit.unary_union
-            if isinstance(limit, BaseGeometry):
-                limit = pygeos.from_shapely(limit)
 
-            bounds = pygeos.bounds(limit)
+            bounds = shapely.bounds(limit)
             centre_x = (bounds[0] + bounds[2]) / 2
             centre_y = (bounds[1] + bounds[3]) / 2
             gdf.geometry = gdf.geometry.translate(xoff=-centre_x, yoff=-centre_y)
@@ -288,14 +286,14 @@ class Tessellation:
             objects.geometry.values.data, distance=segment, index=objects.index
         )
 
-        hull = pygeos.convex_hull(limit)
-        bounds = pygeos.bounds(hull)
+        hull = shapely.convex_hull(limit)
+        bounds = shapely.bounds(hull)
         width = bounds[2] - bounds[0]
         leng = bounds[3] - bounds[1]
-        hull = pygeos.buffer(hull, 2 * width if width > leng else 2 * leng)
+        hull = shapely.buffer(hull, 2 * width if width > leng else 2 * leng)
 
         hull_p, hull_ix = self._dense_point_array(
-            [hull], distance=pygeos.length(hull) / 100, index=[0]
+            [hull], distance=shapely.length(hull) / 100, index=[0]
         )
         points = np.append(points, hull_p, axis=0)
         ids = ids + ([-1] * len(hull_ix))
@@ -328,18 +326,18 @@ class Tessellation:
         points = []
         ids = []
 
-        if pygeos.get_type_id(geoms[0]) not in [1, 2, 5]:
-            lines = pygeos.boundary(geoms)
+        if shapely.get_type_id(geoms[0]) not in [1, 2, 5]:
+            lines = shapely.boundary(geoms)
         else:
             lines = geoms
-        lengths = pygeos.length(lines)
+        lengths = shapely.length(lines)
         for ix, line, length in zip(index, lines, lengths):
             if length > distance:  # some polygons might have collapsed
-                pts = pygeos.line_interpolate_point(
+                pts = shapely.line_interpolate_point(
                     line,
                     np.linspace(0.1, length - 0.1, num=int((length - 0.1) // distance)),
                 )  # .1 offset to keep a gap between two segments
-                points.append(pygeos.get_coordinates(pts))
+                points.append(shapely.get_coordinates(pts))
                 ids += [ix] * len(pts)
 
         points = np.vstack(points)
@@ -355,7 +353,7 @@ class Tessellation:
         polygons = []
         for region in vertices:
             if -1 not in region:
-                polygons.append(pygeos.polygons(voronoi_diagram.vertices[region]))
+                polygons.append(shapely.polygons(voronoi_diagram.vertices[region]))
             else:
                 polygons.append(None)
 
@@ -529,8 +527,8 @@ class Tessellation:
         poly = enclosure.geometry.values.data[ix]
         blg = buildings.iloc[query_res[query_inp == ix]]
         within = blg[
-            pygeos.area(pygeos.intersection(blg.geometry.values.data, poly))
-            > (pygeos.area(blg.geometry.values.data) * threshold)
+            shapely.area(shapely.intersection(blg.geometry.values.data, poly))
+            > (shapely.area(blg.geometry.values.data) * threshold)
         ].copy()
         if len(within) > 1:
             tess = self._morphological_tessellation(
@@ -1030,15 +1028,15 @@ def enclosures(
         for i in unique:
             poly = enclosures.values.data[i]  # get enclosure polygon
             crossing = inp[res == i]  # get relevant additional barriers
-            buf = pygeos.buffer(poly, 0.01)  # to avoid floating point errors
-            crossing_ins = pygeos.intersection(
+            buf = shapely.buffer(poly, 0.01)  # to avoid floating point errors
+            crossing_ins = shapely.intersection(
                 buf, additional.values.data[crossing]
             )  # keeping only parts of additional barriers within polygon
-            union = pygeos.union_all(
-                np.append(crossing_ins, pygeos.boundary(poly))
+            union = shapely.union_all(
+                np.append(crossing_ins, shapely.boundary(poly))
             )  # union
-            polygons = pygeos.get_parts(pygeos.polygonize([union]))  # polygonize
-            within = pygeos.covered_by(
+            polygons = shapely.get_parts(shapely.polygonize([union]))  # polygonize
+            within = shapely.covered_by(
                 polygons, buf
             )  # keep only those within original polygon
             new += list(polygons[within])
